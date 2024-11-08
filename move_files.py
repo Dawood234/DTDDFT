@@ -1,0 +1,24 @@
+import os
+import shutil
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--method', type=str, required=True,
+                    choices=['tda', 'tddft'], help='Calculation method: tda or tddft')
+parser.add_argument('--basis_set', type=str, required=True, help='Basis set (e.g., cc-pVDZ)')
+parser.add_argument('--xc_functional',type=str, required=True)
+args = parser.parse_args()
+xc_functional = args.xc_functional
+folder=args.method+'_'+args.basis_set+'_'+xc_functional
+print(folder)
+current_dir = os.getcwd()
+fcidump_dir = os.path.join(current_dir, f"{folder}_fcidump")
+if not os.path.exists(fcidump_dir):
+    os.makedirs(fcidump_dir)
+
+for filename in os.listdir(current_dir):
+    file_path = os.path.join(current_dir, filename)
+
+    if os.path.isfile(file_path) and filename.endswith(".fcidump"):
+        shutil.move(file_path, os.path.join(fcidump_dir, filename))
+        print(f"Moved {filename} to {fcidump_dir}")
