@@ -36,7 +36,7 @@ run_script("mo_energies.py", method=method, folder_path=folder_path)
 run_script("mo17.py", method=method, folder_path=folder_path)
 run_script("states.py", method=method, folder_path=folder_path)
 run_script("apbv.py", folder_path=folder_path)
-run_script("sqrtambv.py", folder_path=folder_path, method=method)
+run_script("sqrtamb.py", folder_path=folder_path, method=method)
 
 run_script("hq1d.py", method=method, basis_set=basis_set, xc_functional=xc_functional)
 run_script("hq2d.py", method=method, basis_set=basis_set, xc_functional=xc_functional)
