@@ -57,7 +57,7 @@ print(f"\nExtracting data for {folder_path}...")
 
 run_script("05gs.py", method=method, folder_path=folder_path)
 
-run_script("06mo_energies.py", method=method, folder_path=folder_path)
+run_script("mo_extraction.py", method=method, folder_path=folder_path)
 
 run_script("08states.py", method=method, folder_path=folder_path)
 
