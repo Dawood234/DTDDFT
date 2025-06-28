@@ -168,7 +168,7 @@ class TDDFTCalculation:
             cls._apb_data = load_matrix_data(apb_file_path)
         if cls._sqrtamb_data is None:
             if framework.lower() == 'tda':
-                cls._sqrtamb_data = cls._apb_data  # For TDA, sqrt(A-B) = A+B
+                cls._sqrtamb_data = cls._apb_data  # For TDA, sqrt(A-B) = A+B just as a placeholder as it is not needed
             else:
                 cls._sqrtamb_data = load_matrix_data(sqrtamb_file_path)
 
@@ -191,156 +191,164 @@ class TDDFTCalculation:
         apb, sqrtamb = self.get_matrices()
         return self.om_tddft,self.om_d, nu1, nu2, nud, sqrtamb, apb, self.Hdq1, self.Hq1d, self.Hdq2, self.Hq2d
     
+    def dress(self, om):
+        """Calculate dressing matrix"""
+        nu1, nu2, _ = self.calculate_nu()
+        res = np.array([
+            [self.Hq1d*self.Hdq1/(4*np.sqrt(nu1*nu1))*(1+(nu1+self.om_d)*(nu1+self.om_d)/(om**2-(self.om_d**2))),
+             (self.Hq1d*self.Hdq2)/(4*np.sqrt(nu1*nu2))*(1+(nu1+self.om_d)*(nu2+self.om_d)/(om**2-(self.om_d**2)))],
+            [(self.Hq2d*self.Hdq1)/(4*np.sqrt(nu2*nu1))*(1+(nu2+self.om_d)*(nu1+self.om_d)/(om**2-(self.om_d**2))),
+             (self.Hq2d*self.Hdq2)/(4*np.sqrt(nu2*nu2))*(1+(nu2+self.om_d)*(nu2+self.om_d)/(om**2-(self.om_d**2)))]
+        ])
+        return res
 
-def dress( om,  nu1, nu2, om_d,Hq1d, Hq2d, Hdq1, Hdq2):
-    res=np.array([[Hq1d*Hdq1/(4*np.sqrt(nu1*nu1))*(1+(nu1+om_d)*(nu1+om_d)/(om**2-(om_d**2))),(Hq1d*Hdq2)/(4*np.sqrt(nu1*nu2))*(1+(nu1+om_d)*(nu2+om_d)/(om**2-(om_d**2)))],
-                  
-                [(Hq2d*Hdq1)/(4*np.sqrt(nu2*nu1))*(1+(nu2+om_d)*(nu1+om_d)/(om**2-(om_d**2))),(Hq2d*Hdq2)/(4*np.sqrt(nu2*nu2))*(1+(nu2+om_d)*(nu2+om_d)/(om**2-(om_d**2)))] ])
-    return res
+    def renormalized_f1f2(self, e1, e2, F1, F2):
+        """Calculate renormalized oscillator strengths"""
+        nu1, nu2, _ = self.calculate_nu()
+        omega1_squared = e1**2
+        omega2_squared = e2**2
+        beta = np.array([[self.Hq1d * self.Hq1d, self.Hq1d * self.Hq2d],
+                        [self.Hq2d * self.Hdq1, self.Hdq2 * self.Hdq2]])
+        C = np.array([[(nu1 + self.om_d) * (nu1 + self.om_d), (nu1 + self.om_d) * (nu2 + self.om_d)],
+                     [(nu2 + self.om_d) * (nu1 + self.om_d), (nu2 + self.om_d) * (nu2 + self.om_d)]])
 
+        D = np.array([[self.om_d**2, self.om_d**2], [self.om_d**2, self.om_d**2]]) 
+            
+        numerator = beta * C
+        denominator_omega1 = (omega1_squared - D)**2
+        result_matrix_omega_1 = -numerator / denominator_omega1
+        denominator_omega2 = (omega2_squared - D)**2
+        result_matrix_omega_2 = -numerator / denominator_omega2
+        delta1 = np.diag((1,1)) - result_matrix_omega_1
+        delta2 = np.diag((1,1)) - result_matrix_omega_2
+        renormalization_factor_1 = np.sqrt((F1.T)@(delta1@F1))
+        renormalization_factor_2 = np.sqrt((F2.T)@(delta2@F2))
+        F1 = F1 / renormalization_factor_1
+        F2 = F2 / renormalization_factor_2
+        return np.linalg.norm(F1)**2, np.linalg.norm(F2)**2
 
-def renormalized_f1f2(e1, e2, F1, F2, Hq1d, Hq2d, Hdq1, Hdq2, nu1, nu2, om_d):
-    omega1_squared = e1**2
-    omega2_squared = e2**2
-    beta = np.array([[Hq1d * Hq1d, Hq1d * Hq2d],[Hq2d * Hdq1 , Hdq2 * Hdq2]])
-    C = np.array([[( nu1 + om_d ) * ( nu1 + om_d ) , ( nu1 + om_d ) * ( nu2 + om_d ) ],[(nu2+om_d)*(nu1+om_d),(nu2+om_d)*(nu2+om_d)]])
+    def DTTDFT(self):
+        """Perform DTDDFT calculation"""
+        apb, sqrtamb = self.get_matrices()
+        apb_dressed = apb + 2*self.dress(self.om_tddft)
+        C = (sqrtamb)@(apb_dressed)@sqrtamb
+        E, F = np.linalg.eig(C)
+        sorted_id = np.argsort(E)
+        sorted_e = E[sorted_id]
+        sorted_F = F[:, sorted_id]
+        F1, F2 = sorted_F[:,0], sorted_F[:,1]
+        f2s = self.renormalized_f1f2(np.sqrt(sorted_e[0]), np.sqrt(sorted_e[1]), F1, F2)
+        return f2s, np.sqrt(sorted_e)*au_to_ev
 
-    D = np.array([[om_d**2,om_d**2],[om_d**2,om_d**2]]) 
+    def mazur_dtddft(self):
+        """Perform self-consistent DTDDFT calculation (Mazur method)"""
+        apb, sqrtamb = self.get_matrices()
+        oms = np.array([self.om_tddft, 0])
         
-    numerator=beta*C
-    denominator_omega1 = (omega1_squared - D)**2
-    result_matrix_omega_1 = -numerator / denominator_omega1
-    denominator_omega2 = (omega2_squared - D)**2
-    result_matrix_omega_2 = -numerator / denominator_omega2
-    delta1=np.diag((1,1)) - result_matrix_omega_1
-    delta2=np.diag((1,1)) - result_matrix_omega_2
-    renormalization_factor_1 = np.sqrt((F1.T)@(delta1@F1))
-    renormalization_factor_2 = np.sqrt((F2.T)@(delta2@F2))
-    F1=F1 / renormalization_factor_1
-    F2=F2 / renormalization_factor_2
-    return np.linalg.norm(F1)**2,np.linalg.norm(F2)**2
+        def compute_matrix(om):
+            apb_dressed = apb + 2*self.dress(self.om_tddft)
+            C = (sqrtamb)@(apb_dressed)@sqrtamb
+            return C
+            
+        def diagonalize(C):
+            E, F = np.linalg.eig(C)
+            sorted_id = np.argsort(E)
+            sorted_e = np.sqrt(E[sorted_id])
+            sorted_F = F[:, sorted_id]
+            return sorted_e, sorted_F
+        
+        converged = False
+        previous_om = oms[0]
+        tolerance = 1e-6  
+        iterations = 0
+        while not converged:
+            C = compute_matrix(oms[0])
+            oms, Fs = diagonalize(C)
+            if abs(oms[0] - previous_om) < tolerance:
+                converged = True
+            else:
+                previous_om = oms[0]
+            iterations += 1
+        F1, F2 = Fs[:,0], Fs[:,1]
+        f2s = self.renormalized_f1f2(oms[0], oms[1], F1, F2)
+        return f2s, oms*au_to_ev
 
-def DTTDFT(om_tddft,sqrtamb,apb,Hq1d, Hq2d, Hdq1, Hdq2, nu1, nu2, om_d):
-    apb_dressed=apb+2*dress(om_tddft,nu1,nu2,om_d,Hq1d,Hq2d,Hdq1,Hdq2)
-    C=(sqrtamb)@(apb_dressed)@sqrtamb
-    E,F = np.linalg.eig(C)
-    sorted_id = np.argsort(E)
-    sorted_e=E[sorted_id]
-    sorted_F = F[:, sorted_id]
-    F1,F2=sorted_F[:,0],sorted_F[:,1]
-    f2s=renormalized_f1f2(np.sqrt(sorted_e[0]),np.sqrt(sorted_e[1]),F1,F2,Hq1d, Hq2d, Hdq1, Hdq2, nu1, nu2, om_d)
-    return f2s,np.sqrt(sorted_e)*au_to_ev
-
-def mazur_dtddft(om_tddft,sqrtamb,apb,Hq1d, Hq2d, Hdq1, Hdq2, nu1, nu2, om_d):
-    oms=np.array([om_tddft,0])
-    def compute_matrix(om):
-        apb_dressed=apb+2*dress(om_tddft,nu1,nu2,om_d,Hq1d,Hq2d,Hdq1,Hdq2)
-        C=(sqrtamb)@(apb_dressed)@sqrtamb
-        return C
-    def diagonalize(C):
-        E,F = np.linalg.eig(C)
+    def X_dress_bob(self, om):
+        """Calculate X-dressing matrix for DTDA"""
+        dress = np.array([
+            [self.Hq1d*self.Hdq1/(om-self.om_d), (self.Hq1d*self.Hdq2)/(om-self.om_d)],
+            [(self.Hq2d*self.Hdq1)/(om-self.om_d), (self.Hq2d*self.Hdq2)/(om-self.om_d)]
+        ])
+        return dress
+        
+    def DTDA(self):
+        """Perform DTDA calculation"""
+        apb, _ = self.get_matrices()
+        aa_dressed = apb + self.X_dress_bob(self.om_tddft)
+        E, F = np.linalg.eig(aa_dressed)
         sorted_id = np.argsort(E)
-        sorted_e=np.sqrt(E[sorted_id])
+        sorted_e = E[sorted_id]
         sorted_F = F[:, sorted_id]
-        return sorted_e,sorted_F
-    
-    converged = False
-    previous_om = oms[0]
-    tolerance = 1e-6  
-    iterations = 0
-    while not converged:
-        C= compute_matrix(oms[0])
-        oms,Fs = diagonalize(C)
-        if abs(oms[0]- previous_om) < tolerance:
-            converged = True
-            # print('converged in {} iterations'.format(iterations))
-        else:
-            previous_om= oms[0]
-        iterations += 1
-    F1,F2=Fs[:,0],Fs[:,1]
-    f2s=renormalized_f1f2(oms[0],oms[1],F1,F2,Hq1d, Hq2d, Hdq1, Hdq2, nu1, nu2, om_d)
-    return f2s,oms*au_to_ev
+        F1, F2 = sorted_F[:,0], sorted_F[:,1]
+        f2s = self.renormalized_f1f2(sorted_e[0], sorted_e[1], F1, F2)
+        return f2s, sorted_e*au_to_ev
 
+    def mazur_DTDA(self):
+        """Perform self-consistent DTDA calculation (Mazur method)"""
+        apb, _ = self.get_matrices()
+        oms = np.array([self.om_tddft, 0]) 
+        
+        def compute_matrix(om):
+            aa_dressed = apb + self.X_dress_bob(self.om_tddft)
+            return aa_dressed
+        
+        def diagonalize(C):
+            E, F = np.linalg.eig(C)
+            sorted_id = np.argsort(E)
+            sorted_e = E[sorted_id]
+            sorted_F = F[:, sorted_id]
+            return sorted_e, sorted_F
 
+        converged = False
+        previous_om = oms[0]
+        tolerance = 1e-6  
+        iterations = 0
 
-#DTDA
-
-def X_dress_bob(om, om_d,Hq1d, Hq2d, Hdq1, Hdq2):
-    Hq1d, Hdq1, Hq2d, Hdq2 = Hq1d, Hdq1, Hq2d, Hdq2
-    dress = np.array([
-        [Hq1d*Hdq1/(om-om_d), (Hq1d*Hdq2)/(om-om_d)],
-        [(Hq2d*Hdq1)/(om-om_d), (Hq2d*Hdq2)/(om-om_d)]
-    ])
-    return dress
-    
-def DTDA(om_tddft,apb,Hq1d, Hq2d, Hdq1, Hdq2,om_d,nu1, nu2):
-    aa_dressed=apb+X_dress_bob( om_tddft, om_d,Hq1d, Hq2d, Hdq1, Hdq2)
-    E,F = np.linalg.eig(aa_dressed)
-    sorted_id = np.argsort(E)
-    sorted_e=E[sorted_id]
-    sorted_F = F[:, sorted_id]
-    F1,F2=sorted_F[:,0],sorted_F[:,1]
-    f2s=renormalized_f1f2(sorted_e[0],sorted_e[1],F1,F2,Hq1d, Hq2d, Hdq1, Hdq2, nu1, nu2, om_d)
-    return f2s,sorted_e*au_to_ev
-
-    
-def mazur_DTDA(om_tddft,apb,Hq1d, Hq2d, Hdq1, Hdq2,nu1,nu2,om_d):
-    oms=np.array([om_tddft,0]) 
-    
-    def compute_matrix(om):
-        aa_dressed=apb+X_dress_bob(om_tddft, om_d,Hq1d, Hq2d, Hdq1, Hdq2)
-        return aa_dressed
-    
-    def diagonalize(C):
-        E,F = np.linalg.eig(C)
-        sorted_id = np.argsort(E)
-        sorted_e=E[sorted_id]
-        sorted_F = F[:, sorted_id]
-        return sorted_e,sorted_F
-
-
-    converged = False
-    previous_om = oms[0]
-    tolerance = 1e-6  
-    iterations = 0
-
-    while not converged:
-        A = compute_matrix(oms[0])
-        oms,Fs = diagonalize(A)
-        iterations += 1
-        if abs(oms[0]- previous_om) < tolerance:
-            converged = True
-            # print("Converged in {} iterations".format(iterations))
-        else:
-            previous_om= oms[0]
-    
-    F1,F2=Fs[:,0],Fs[:,1]
-
-    f2s=renormalized_f1f2(oms[0],oms[1],F1,F2,Hq1d, Hq2d, Hdq1, Hdq2, nu1, nu2, om_d)
-    return f2s,oms*au_to_ev
+        while not converged:
+            A = compute_matrix(oms[0])
+            oms, Fs = diagonalize(A)
+            iterations += 1
+            if abs(oms[0] - previous_om) < tolerance:
+                converged = True
+            else:
+                previous_om = oms[0]
+        
+        F1, F2 = Fs[:,0], Fs[:,1]
+        f2s = self.renormalized_f1f2(oms[0], oms[1], F1, F2)
+        return f2s, oms*au_to_ev
 
 
 #run plot and compare with ref
 
 file_path='../ex_data.txt'
-# Handle space-separated format
 data = pd.read_csv(file_path, sep=r'\s+', comment='#')
-# Rename columns to match expected format (bla, bu, ag)
 if len(data.columns) >= 3:
     data.columns = ['x', 'bu', 'ag']
 bla_ex= data['x'].to_numpy()
 bu_delta= data['bu'].to_numpy()
 ag_delta= data['ag'].to_numpy()
 
-def plot_dtddft(meth,ag,bu,gs):
+def plot_dtddft(algorithm, ag, bu, gs):
     f12,f22=[],[]
     e1,e2=[],[]
     nu1_vec,nu2_vec, nud_vec=[],[],[]
     om_d_vec=[]
     for i in range(len(bla)):
-        data=TDDFTCalculation(i)
-        om_tddft,om_d,nu1,nu2,nud,sqrtamb,apb,Hdq1,Hq1d,Hdq2,Hq2d=data.get_results()
-        fs,es=meth(om_tddft,sqrtamb,apb,Hq1d, Hq2d, Hdq1, Hdq2, nu1, nu2, om_d)
+        calc = TDDFTCalculation(i)
+        calc_method = getattr(calc, algorithm)
+        fs, es = calc_method()
+        
+        nu1, nu2, nud = calc.calculate_nu()
         f12.append(fs[0])
         f22.append(fs[1])
         e1.append(es[0])
@@ -348,7 +356,7 @@ def plot_dtddft(meth,ag,bu,gs):
         nu1_vec.append(nu1)
         nu2_vec.append(nu2)
         nud_vec.append(nud)
-        om_d_vec.append(om_d)
+        om_d_vec.append(calc.om_d)
     f12,f22,e1,e2=np.array(f12),np.array(f22),np.array(e1),np.array(e2)
     plt.figure(figsize=(10, 6))
     ag_shifted=ag+gs-gs[0]
@@ -356,7 +364,6 @@ def plot_dtddft(meth,ag,bu,gs):
     e11=e1+(gs-gs[0])*au_to_ev
     e22=e2+(gs-gs[0])*au_to_ev
 
-    # plt.plot(np.concatenate((bla[:2],bla[6:])),np.concatenate((e11[:2],e11[6:])),label='DTDDFT#1',color='b',marker='+',markevery=3,markersize=8)
     plt.plot(bla, e11,  label='DTDDFT#1',color='b',marker='+',markevery=3,markersize=8)
     
     plt.plot(bla_ex,bu_delta,marker='o',markerfacecolor='None',label='Bu(Ref.)',color='k',markevery=4)
@@ -371,15 +378,10 @@ def plot_dtddft(meth,ag,bu,gs):
     plt.legend(fontsize=13,loc=(0.03,0.01))
     plt.xlabel(r'BLA(${\AA}$)',fontsize=15)
     plt.ylabel('E (eV)',fontsize=15)
-    plt.title(f'd{framework}: {basis}, {func}')
+    plt.title(f'{algorithm}: {basis}, {func}')
     plt.show()
 
     return e11, e22, f12, f22, ag_shifted, bu_shifted,nu1_vec,nu2_vec,nud_vec
+
 if framework=='tddft':
-    e11, e22, f12, f22, ag_shifted, bu_shifted,nu1_vec,nu2_vec,nud_vec=plot_dtddft(mazur_dtddft,ag_tddft_vec,bu_tddft_vec,gs)
-    # plt.plot(bla,f12)
-    # plt.gca().invert_xaxis()
-    # plt.ylabel(r'$\vert G_1\vert ^2$',fontsize=15)
-    # plt.xlabel(r'BLA(${\AA}$)',fontsize=15)
-    # # plt.xlim(0.130,-.10)
-    # plt.show()
+    e11, e22, f12, f22, ag_shifted, bu_shifted, nu1_vec, nu2_vec, nud_vec = plot_dtddft('mazur_dtddft', ag_tddft_vec, bu_tddft_vec, gs) 
