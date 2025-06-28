@@ -32,7 +32,6 @@ input_files.sort(key=extract_index)
 
 # Run NWChem for each input file in numerical order
 for input_file in input_files:
-        # Generate clean output file name: "tddft_input_5.nw" → "tddft_5.out"
         base_name = input_file.replace("_input_", "_").replace(".nw", ".out")
         output_file = base_name
 
