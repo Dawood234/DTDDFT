@@ -26,10 +26,9 @@ Core Workflow Scripts (6):
 ├── 04move_files.py               # Organize output files
 └── 05gs.py                       # Extract ground state energies
 
-Unified Data Extraction (3):
+Unified Data Extraction (2):
 ├── unified_file_processor.py     # Extract states, matrices, MO energies (1 pass)
-├── coupling_extraction.py        # Extract coupling elements from fcidump
-└── collect_data_simple.py        # Compile all data into organized format
+└── coupling_extraction.py        # Extract coupling elements from fcidump
 
 Extraction Logic Modules:
 ├── extraction_logic/
@@ -57,7 +56,6 @@ method = "tddft"           # or "tda"
 xc_functional = "pbe0"     # DFT functional
 basis_set = "cc-pVDZ"      # Basis set
 run_calc = True            # Set to False to skip calculations
-collect_data = True        # Compile data after extraction
 ```
 
 ### Individual Script Usage
@@ -111,13 +109,7 @@ python coupling_extraction.py \
     --functional pbe0
 ```
 
-#### 5. Compile Final Data
-```bash
-python collect_data_simple.py \
-    --method tddft \
-    --basis cc-pVDZ \
-    --functional pbe0
-```
+
 
 ## 📁 File Organization
 

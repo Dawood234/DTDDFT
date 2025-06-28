@@ -3,7 +3,6 @@ import argparse
 # from geom import geometries #LBSCJ19 geometry
 # from geom_pslpfc21 import geometries # PSLPFC geometry (in agnstrom)
 
-# Define the argument parser
 parser = argparse.ArgumentParser(description="Generate input files for TDDFT or TDA calculations.")
 parser.add_argument('--geometry_file', type=str, required=True, help='Path to the folder where files will be saved')
 parser.add_argument('--num_atoms', type=int, required=True, help='number of atoms per geometry')
@@ -13,7 +12,6 @@ parser.add_argument('--xc_functional', type=str, required=True, help='Exchange-c
 parser.add_argument('--basis_set', type=str, required=True, help='Basis set (e.g., cc-pVDZ)')
 parser.add_argument('--unit', type=str, required=True)
 
-# Parse the arguments
 args = parser.parse_args()
 atoms_per_geometry=args.num_atoms
 folder_path = args.folder_path
@@ -84,7 +82,6 @@ task dft fcidump
 # Select the appropriate template based on the method
 template = template_tda if args.method == "tda" else template_tddft
 
-# Create the folder if it doesn't exist
 
 os.makedirs(folder_path, exist_ok=True)
 
@@ -109,19 +106,14 @@ def read_and_split_geometries(filename, atoms_per_geometry):
 
     return geometries
 
-# Specify the file containing the geometries
 filename = args.geometry_file
 geometries = read_and_split_geometries(filename,atoms_per_geometry)
 
-# Generate input files for each geometry
 for i, geometry in enumerate(geometries):
-    # Indent the geometry with 4 spaces
     indented_geometry = "\n".join(["    " + line for line in geometry.strip().split("\n")])
     input_data = template.format(index=i, geometries=indented_geometry)
     
-    # Specify the path to the file within the specified folder
     file_path = os.path.join(folder_path, f"{args.method}_input_{i}.nw")
     
-    # Open the file for writing
     with open(file_path, "w") as f:
         f.write(input_data)

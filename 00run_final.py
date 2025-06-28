@@ -2,14 +2,13 @@ import subprocess
 import os
 
 method = "tddft"
-xc_functional = "pbe0"
-basis_set = "cc-pVTZ"
+xc_functional = "pbe96"
+basis_set = "cc-pVDZ"
 folder_path = f"{method}_{basis_set}_{xc_functional}"
 geometry_file='geom.txt'
 num_atoms=10
 unit = 'angstrom'
-run_calc = True
-collect_data = True  
+run_calc = False
 print(folder_path)
 
 def run_script(script_name, **kwargs):
@@ -19,22 +18,7 @@ def run_script(script_name, **kwargs):
         cmd.append(str(value))
     subprocess.run(cmd)
 
-def collect_and_save_data(method, basis_set, xc_functional):
-    """Verify data using the standardized approach"""
-    print(f"\n=== Verifying Data for {method}_{basis_set}_{xc_functional} ===")
-    
-    cmd = ["python3", "collect_data_simple.py", 
-           "--method", method, 
-           "--basis", basis_set, 
-           "--functional", xc_functional]
-    
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    
-    if result.returncode == 0:
-        print("Data verification successful!")
-        print(result.stdout)
-    else:
-        print(f"Data verification failed: {result.stderr}")
+
 
 if run_calc:
     # Generate input files
@@ -68,9 +52,7 @@ else:
     print(f"\nSkipping data extraction - folder {folder_path} not found")
     print(f"Assuming data was already extracted to data_{folder_path}.txt")
 
-if collect_data:
-    # Verify all data using the new standardized system
-    collect_and_save_data(method, basis_set, xc_functional)
+
 
 print(f"\nComplete workflow finished for {folder_path}!")
 print(f"Vector data: data_{folder_path}.txt")
