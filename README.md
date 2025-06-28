@@ -1,263 +1,187 @@
-# DTDDFT Bond Length Alternation (BLA) Scan Workflow
+# DTDDFT Bond Length Alternation (BLA) Scan Analysis
 
-This repository contains an automated workflow for running **Dressed Time-Dependent Density Functional Theory (DTDDFT)** calculations with bond length alternation scanning using NWChem, followed by efficient data extraction and analysis.
+This repository contains scripts for running dressed time-dependent density functional theory (DTDDFT) calculations with bond length alternation scanning using NWChem.
 
-## 🎯 What This Code Does
+## Overview
 
-**Primary Purpose**: Automate the complete workflow for studying electronic excitations in conjugated systems across different bond length alternation patterns.
+The workflow performs systematic BLA scans on molecular systems and analyzes the results using various DTDDFT/DTDA algorithms. It includes automated data extraction, matrix processing, and comparative analysis with reference data.
 
-**Key Capabilities**:
-- Generate NWChem input files for multiple geometries (BLA scan)
-- Run NWChem calculations in correct sequence
-- Extract and organize all relevant data efficiently
-- Support multiple methods (TDDFT, TDA), basis sets, and functionals
-- Provide ready-to-use data for analysis and plotting
+## Prerequisites
 
-## 🏗️ Architecture Overview
+- Python 3.7+
+- NumPy
+- Pandas
+- Matplotlib
+- NWChem (for quantum chemistry calculations)
 
-The workflow uses a **highly optimized, modular architecture** that reads large output files only once:
+## Installation
 
-```
-Core Workflow Scripts (6):
-├── 00run_final_standardized.py    # Main orchestrator
-├── 01gen_inputFiles.py           # Generate NWChem input files  
-├── 02run_nwchem.py               # Run calculations (in correct order)
-├── 03clean.py                    # Clean temporary files
-├── 04move_files.py               # Organize output files
-└── 05gs.py                       # Extract ground state energies
+1. Clone this repository:
+   ```bash
+   git clone <repository-url>
+   cd v1.3_clean_backup_imp
+   ```
 
-Unified Data Extraction (2):
-├── unified_file_processor.py     # Extract states, matrices, MO energies (1 pass)
-└── coupling_extraction.py        # Extract coupling elements from fcidump
+2. Install Python dependencies:
+   ```bash
+   pip install numpy pandas matplotlib
+   ```
 
-Extraction Logic Modules:
-├── extraction_logic/
-│   ├── states_extractor.py       # Excited state extraction logic
-│   ├── matrix_extractor.py       # A+B and sqrt(A-B) matrix logic  
-│   └── mo_extractor.py           # Molecular orbital energy logic
+3. Ensure NWChem is installed and accessible in your PATH.
 
-Analysis:
-└── plots_analysis/analysis.py    # Load and analyze extracted data
-```
+## File Structure
 
-## 🚀 Quick Start
+### Core Scripts
+- `01gen_inputFiles.py` - Generates NWChem input files for BLA scan
+- `02run_nwchem.py` - Executes NWChem calculations
+- `03clean.py` - Cleans up temporary files
+- `04move_files.py` - Organizes output files
+- `05gs.py` - Extracts ground state energies
 
-### Complete Automated Workflow
+### Analysis Scripts
+- `plots_analysis/analysis.py` - Original analysis with traditional function signatures
+- `plots_analysis/analysis_refactored.py` - Refactored version with simplified class methods
 
-For a full calculation + data extraction run:
+### Data Extraction
+- `extraction_logic/` - Modular extraction components
+  - `mo_extractor.py` - Molecular orbital energy extraction
+  - `matrix_extractor.py` - APB and sqrt(A-B) matrix extraction
+  - `states_extractor.py` - Excited state data extraction
 
+## Usage
+
+### Step 1: Prepare Geometry
+1. Place your molecular geometry in `geom.txt`
+2. Ensure the geometry includes BLA coordinate definitions
+
+### Step 2: Generate Input Files
 ```bash
-python 00run_final_standardized.py
+python3 01gen_inputFiles.py
+```
+This creates NWChem input files for each BLA point in the scan.
+
+### Step 3: Run Calculations
+```bash
+python3 02run_nwchem.py
+```
+Executes all NWChem calculations. This may take considerable time depending on system size and number of BLA points.
+
+### Step 4: Extract Data
+The unified file processor automatically extracts all required data:
+```bash
+python3 unified_file_processor.py
+```
+This creates:
+- `data_tddft_cc-pVDZ_pbe96.txt` - Vector data (energies, MO values, coupling elements)
+- `apb_tddft_cc-pVDZ_pbe96` - A+B matrices
+- `sqrtamb_tddft_cc-pVDZ_pbe96` - sqrt(A-B) matrices
+
+### Step 5: Run Analysis
+
+#### Option A: Original Analysis
+```bash
+cd plots_analysis
+python3 analysis.py
 ```
 
-**Configure these variables in the script:**
+#### Option B: Refactored Analysis (Recommended)
+```bash
+cd plots_analysis
+python3 analysis_refactored.py
+```
+
+The refactored version offers cleaner function signatures and easier method switching.
+
+## Configuration
+
+### Basis Sets and Functionals
+Edit the configuration variables in analysis scripts:
 ```python
-method = "tddft"           # or "tda"
-xc_functional = "pbe0"     # DFT functional
-basis_set = "cc-pVDZ"      # Basis set
-run_calc = True            # Set to False to skip calculations
+basis_list = 'def2-SVP,def2-TZVP,def2-TZVPP,cc-pVDZ,cc-pVTZ'.split(',')
+basis = basis_list[3]  # cc-pVDZ
+func = 'pbe96'
+framework = 'tddft'  # or 'tda'
 ```
 
-### Individual Script Usage
-
-#### 1. Generate Input Files
-```bash
-python 01gen_inputFiles.py \
-    --method tddft \
-    --xc_functional pbe0 \
-    --basis_set cc-pVDZ \
-    --folder_path tddft_cc-pVDZ_pbe0 \
-    --geometry_file geom.txt \
-    --num_atoms 10 \
-    --unit angstrom
-```
-
-#### 2. Run NWChem Calculations
-```bash
-python 02run_nwchem.py \
-    --folder_path tddft_cc-pVDZ_pbe0 \
-    --method tddft
-```
-*Note: Files are automatically processed in correct numerical order*
-
-#### 3. Extract All Data (Unified - Most Efficient)
-```bash
-# Extract everything in one pass
-python unified_file_processor.py \
-    --folder_path tddft_cc-pVDZ_pbe0 \
-    --method tddft \
-    --extract_types all
-
-# Or extract specific data types
-python unified_file_processor.py \
-    --folder_path tddft_cc-pVDZ_pbe0 \
-    --method tddft \
-    --extract_types states
-
-python unified_file_processor.py \
-    --folder_path tddft_cc-pVDZ_pbe0 \
-    --method tddft \
-    --extract_types mos \
-    --mo_numbers "14,15,16,17,18"
-```
-
-#### 4. Extract Coupling Elements
-```bash
-python coupling_extraction.py \
-    --method tddft \
-    --basis_set cc-pVDZ \
-    --functional pbe0
-```
-
-
-
-## 📁 File Organization
-
-After running the workflow, your data is organized as:
-
-```
-tddft_cc-pVDZ_pbe0/                    # Calculation folder
-├── tddft_input_0.nw                   # Input files
-├── tddft_input_0.out                  # Output files
-├── ...
-
-data_tddft_cc-pVDZ_pbe0.txt            # All vector data (organized)
-├── gs_tddft_cc-pVDZ_pbe0               # Ground state energies
-├── mo14, mo15, mo16, mo17, mo18        # Molecular orbital energies
-├── ag_tddft, bu_tddft                  # Excited state energies
-└── Hq1d, Hq2d                         # Coupling elements
-
-apb_tddft_cc-pVDZ_pbe0                 # A+B matrices (separate file)
-sqrtamb_tddft_cc-pVDZ_pbe0             # sqrt(A-B) matrices (separate file)
-```
-
-## 📊 Data Analysis
-
-Load your data for analysis:
-
+### BLA Array
+The BLA points are defined in the analysis scripts. Modify as needed:
 ```python
-import numpy as np
-from plots_analysis.analysis import load_vector_data, load_matrix_data
-
-# Load vector data
-method, basis, functional = "tddft", "cc-pVDZ", "pbe0"
-data = load_vector_data(method, basis, functional)
-
-# Access specific data
-ground_states = data['gs_tddft_cc-pVDZ_pbe0']
-mo_homo = data['mo14']  # HOMO energies
-mo_lumo = data['mo15']  # LUMO energies
-ag_states = data['ag_tddft']  # Ag excited states
-coupling_hq1d = data['Hq1d']  # Coupling elements
-
-# Load matrix data
-apb_matrices = load_matrix_data(method, basis, functional, matrix_type='apb')
-sqrt_amb_matrices = load_matrix_data(method, basis, functional, matrix_type='sqrtamb')
+bla = np.array([0.125466, 0.110464, ..., -0.144])
 ```
 
-## ⚙️ Configuration Options
-
-### Supported Methods
-- **TDDFT**: Full time-dependent DFT
-- **TDA**: Tamm-Dancoff approximation
-
-### Common Basis Sets
-- `cc-pVDZ`, `cc-pVTZ`, `cc-pVQZ`
-- `def2-SVP`, `def2-TZVP`, `def2-QZVP`
-
-### Common Functionals
-- `pbe0`, `b3lyp`, `cam-b3lyp`
-- `pbe96`, `blyp`
-
-### Molecular Orbital Numbers
-Default: `14,15,16,17,18` (typical for conjugated systems)
-- MO14: HOMO-1
-- MO15: HOMO
-- MO16: LUMO
-- MO17: LUMO+1
-- MO18: LUMO+2
-
-## 🔧 Advanced Usage
-
-### Batch Processing Multiple Combinations
-```python
-combinations = [
-    {"method": "tddft", "basis": "cc-pVDZ", "functional": "pbe0"},
-    {"method": "tddft", "basis": "cc-pVTZ", "functional": "pbe0"},
-    {"method": "tda", "basis": "cc-pVTZ", "functional": "pbe0"},
-]
-
-for combo in combinations:
-    # Update variables in 00run_final_standardized.py and run
-    pass
+### Reference Data
+Place experimental or reference data in `ex_data.txt` with format:
 ```
-
-### Custom Geometry Files
-Place your geometries in `geom.txt` with format:
-```
-C  x1  y1  z1
-C  x2  y2  z2
+BLA_value  Bu_energy  Ag_energy
+0.125466   5.85       6.75
 ...
 ```
 
-### Selective Data Extraction
-```bash
-# Only excited states
-python unified_file_processor.py --extract_types states
+## Analysis Methods
 
-# Only matrices  
-python unified_file_processor.py --extract_types matrices
+The refactored version supports multiple algorithms:
 
-# Custom MO range
-python unified_file_processor.py --extract_types mos --mo_numbers "13,14,15,16"
+### DTDDFT Methods
+- `'DTTDFT'` - Standard DTDDFT
+- `'mazur_dtddft'` - Self-consistent DTDDFT (Mazur method)
+
+### DTDA Methods  
+- `'DTDA'` - Standard DTDA
+- `'mazur_DTDA'` - Self-consistent DTDA (Mazur method)
+
+### Switching Methods
+```python
+# Change algorithm by modifying the function call:
+plot_dtddft('mazur_dtddft', ag_tddft_vec, bu_tddft_vec, gs)
+# or
+plot_dtddft('DTDA', ag_tddft_vec, bu_tddft_vec, gs)
 ```
 
-## 🚀 Performance Benefits
+## Output
 
-**Compared to manual workflows:**
-- ✅ **10x faster**: Optimized file I/O (read files once, not 3+ times)
-- ✅ **Zero manual file management**: No intermediate text files to handle
-- ✅ **Automatic data organization**: Ready-to-use structured data
-- ✅ **Error-free extraction**: No copy-paste mistakes
-- ✅ **Consistent ordering**: Calculations run in proper sequence
-- ✅ **Reproducible results**: Same workflow, same results
+### Generated Files
+- Vector data files (`data_*.txt`)
+- Matrix files (`apb_*`, `sqrtamb_*`)
+- CSV results (`dtddft_results_*.csv`)
 
-## 🛠️ Troubleshooting
+### Plots
+- Comparison plots showing DTDDFT vs reference data
+- BLA vs energy curves for different states
+- TDDFT comparison data
+
+## Troubleshooting
 
 ### Common Issues
 
-**No data extracted:**
-- Check that NWChem calculations completed successfully
-- Verify output files contain expected keywords ("A+B", "Vector", etc.)
+1. **Missing data files**: Ensure all extraction steps completed successfully
+2. **Matrix loading errors**: Check file paths and permissions
+3. **Convergence issues**: Adjust tolerance in Mazur methods
+4. **Memory issues**: Large matrix files may require sufficient RAM
 
-**Files processed out of order:**
-- The workflow now automatically sorts files by numerical index
-- Check that input files follow naming convention: `{method}_input_{index}.nw`
+### Performance Tips
 
-**Missing coupling elements:**
-- Ensure fcidump files are generated during NWChem calculations
-- Check that the method supports coupling element calculation
+1. Use the refactored analysis for better performance
+2. Class methods avoid redundant parameter passing
+3. Matrix data is cached automatically
+4. Progress can be monitored through debug output
 
-**Memory issues with large systems:**
-- Use smaller basis sets for initial testing
-- Process data in smaller batches if needed
+## File Naming Convention
 
-### Getting Help
+Files follow the pattern: `{type}_{framework}_{basis}_{functional}`
 
-1. Check that all dependencies are installed (NWChem, Python, numpy)
-2. Verify file permissions and paths
-3. Run individual scripts to isolate issues
-4. Check NWChem output files for calculation errors
+Examples:
+- `data_tddft_cc-pVDZ_pbe96.txt`
+- `apb_tddft_cc-pVDZ_pbe96`
+- `sqrtamb_tddft_cc-pVDZ_pbe96`
 
-## 📝 Citation
+## Contributing
 
-If you use this workflow in your research, please cite the relevant methods and software:
-- NWChem computational chemistry package
-- DTDDFT methodology papers
-- This workflow (if published)
+When modifying the code:
+1. Keep the original and refactored versions in sync for core functionality
+2. Update both analysis scripts when changing algorithms
+3. Maintain backward compatibility with existing data files
+4. Test with known reference systems
 
----
+## License
 
-**Workflow Version**: v1.3 (Consolidated & Optimized)  
-**Last Updated**: 2024  
-**Compatibility**: NWChem 7.0+, Python 3.6+ 
+This code is provided for academic and research purposes. 

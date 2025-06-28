@@ -8,11 +8,11 @@ import re
 mpl.rcParams['figure.dpi']=100
 
 basis_list='def2-SVP,def2-TZVP,def2-TZVPP,cc-pVDZ,cc-pVTZ'.split(',')
-basis = basis_list[3]  # def2-SVP
+basis = basis_list[0]  # def2-SVP
 func = 'pbe96'
-framework = 'tddft'  # Overall theoretical framework: 'tddft' or 'tda'
+method = 'tddft'
 
-print(f"Loading data for: {framework}_{basis}_{func}")
+print(f"Loading data for: {method}_{basis}_{func}")
 
 def load_vector_data(data_file):
     """Load all vector data from a standardized data file"""
@@ -37,20 +37,26 @@ def load_vector_data(data_file):
     
     return data_dict
 
-folder_name = f"{framework}_{basis}_{func}"
+# Load data from standardized files
+folder_name = f"{method}_{basis}_{func}"
 
+# Load vector data
 data_file = f"../data_{folder_name}.txt"
 vector_data = load_vector_data(data_file)
 
+# Load matrix data - matrices are already extracted by scripts to apb_* and sqrtamb_* files
+# For now, we'll note that matrix files exist and can be loaded by scripts if needed
 apb_file = f"../apb_{folder_name}"
 sqrtamb_file = f"../sqrtamb_{folder_name}"
 
+# Check if matrix files exist
 apb_exists = os.path.exists(apb_file)
 sqrtamb_exists = os.path.exists(sqrtamb_file)
 
-
-apb = None 
-sqrtamb = None  
+# Note: Matrix data is handled by the TDDFT calculation scripts directly
+# The apb_* and sqrtamb_* files are already in the correct format
+apb = None  # Will be loaded by calculation scripts as needed
+sqrtamb = None  # Will be loaded by calculation scripts as needed
 
 # BLA array 
 bla = np.array([0.125466, 0.110464, 0.0954646, 0.0803673, 0.0652275, 0.0500952, 0.0349265, 0.0198214, 0.00452051,
@@ -58,6 +64,7 @@ bla = np.array([0.125466, 0.110464, 0.0954646, 0.0803673, 0.0652275, 0.0500952, 
                 -0.0390515, -0.0423162, -0.0457886, -0.0490522, -0.0523145, -0.0556133, -0.062, -0.075, -0.088, 
                 -0.099, -0.111, -0.122, -0.134, -0.144])
 
+# Extract vectors from loaded data with flexible naming
 def get_vector_data(data_dict, possible_names):
     """Get vector data by trying multiple possible names"""
     for name in possible_names:
@@ -102,33 +109,37 @@ def load_matrix_data(filename):
     
     return np.array(num_list) if num_list else None
 
+# Extract all vector data
 gs = get_vector_data(vector_data, [f'gs_{folder_name}', 'gs'])
 mo14_vec = get_vector_data(vector_data, ['mo14'])
 mo15_vec = get_vector_data(vector_data, ['mo15'])  
 mo16_vec = get_vector_data(vector_data, ['mo16'])
 mo17_vec = get_vector_data(vector_data, ['mo17'])
-ag_tddft_vec = get_vector_data(vector_data, [f'ag_{framework}', 'ag'])
-bu_tddft_vec = get_vector_data(vector_data, [f'bu_{framework}', 'bu'])
+ag_tddft_vec = get_vector_data(vector_data, [f'ag_{method}', 'ag'])
+bu_tddft_vec = get_vector_data(vector_data, [f'bu_{method}', 'bu'])
 Hq1d_vec = get_vector_data(vector_data, ['Hq1d'])
 Hq2d_vec = get_vector_data(vector_data, ['Hq2d'])
 
-apb_vec = None  
-sqrtamb_vec = None 
+# Matrix data handled separately - files available at apb_* and sqrtamb_*
+apb_vec = None  # Available in apb_file
+sqrtamb_vec = None  # Available in sqrtamb_file
 
 # Convert units
 au_to_ev = 27.2114
-print(f"Configuration: {basis}, {func}, {framework}")
+print(f"Configuration: {basis}, {func}, {method}")
 
 if ag_tddft_vec is not None:
     ag_tddft_vec = ag_tddft_vec / au_to_ev
 if bu_tddft_vec is not None:
     bu_tddft_vec = bu_tddft_vec / au_to_ev
 
+# Create basis_fun dictionary for compatibility with existing code (matrices handled separately)
 basis_fun = {
     f"{basis}_{func}": [gs, ag_tddft_vec, bu_tddft_vec, mo14_vec, mo15_vec, 
                         mo16_vec, mo17_vec, apb_file, sqrtamb_file, Hq1d_vec, Hq2d_vec]
 }
 
+# Unpack for compatibility with existing analysis code
 if f"{basis}_{func}" in basis_fun:
     gs, ag_tddft_vec, bu_tddft_vec, mo14_vec, mo15_vec, mo16_vec, mo17_vec, apb_file_path, sqrtamb_file_path, Hq1d_vec, Hq2d_vec = basis_fun[f"{basis}_{func}"]
 
@@ -139,6 +150,7 @@ print(f"                   Hq1d/2d={all(x is not None for x in [Hq1d_vec, Hq2d_v
 print(f"                   matrix files: apb={apb_exists}, sqrtamb={sqrtamb_exists}")
 
 class TDDFTCalculation:
+    # Class variables to cache loaded matrix data
     _apb_data = None
     _sqrtamb_data = None
     
@@ -167,7 +179,7 @@ class TDDFTCalculation:
         if cls._apb_data is None:
             cls._apb_data = load_matrix_data(apb_file_path)
         if cls._sqrtamb_data is None:
-            if framework.lower() == 'tda':
+            if method.lower() == 'tda':
                 cls._sqrtamb_data = cls._apb_data  # For TDA, sqrt(A-B) = A+B
             else:
                 cls._sqrtamb_data = load_matrix_data(sqrtamb_file_path)
@@ -322,12 +334,8 @@ def mazur_DTDA(om_tddft,apb,Hq1d, Hq2d, Hdq1, Hdq2,nu1,nu2,om_d):
 
 #run plot and compare with ref
 
-file_path='../ex_data.txt'
-# Handle space-separated format
-data = pd.read_csv(file_path, sep=r'\s+', comment='#')
-# Rename columns to match expected format (bla, bu, ag)
-if len(data.columns) >= 3:
-    data.columns = ['x', 'bu', 'ag']
+file_path='/Users/physics2/Documents/work/projects/DTDDFT/may20/bla_scan_scripts/delta_eomcc.csv'
+data = pd.read_csv(file_path)
 bla_ex= data['x'].to_numpy()
 bu_delta= data['bu'].to_numpy()
 ag_delta= data['ag'].to_numpy()
@@ -371,11 +379,11 @@ def plot_dtddft(meth,ag,bu,gs):
     plt.legend(fontsize=13,loc=(0.03,0.01))
     plt.xlabel(r'BLA(${\AA}$)',fontsize=15)
     plt.ylabel('E (eV)',fontsize=15)
-    plt.title(f'd{framework}: {basis}, {func}')
+    plt.title(f'd{method}: {basis}, {func}')
     plt.show()
 
     return e11, e22, f12, f22, ag_shifted, bu_shifted,nu1_vec,nu2_vec,nud_vec
-if framework=='tddft':
+if method=='tddft':
     e11, e22, f12, f22, ag_shifted, bu_shifted,nu1_vec,nu2_vec,nud_vec=plot_dtddft(mazur_dtddft,ag_tddft_vec,bu_tddft_vec,gs)
     # plt.plot(bla,f12)
     # plt.gca().invert_xaxis()
