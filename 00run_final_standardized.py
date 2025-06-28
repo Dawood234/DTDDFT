@@ -57,15 +57,9 @@ print(f"\nExtracting data for {folder_path}...")
 
 run_script("05gs.py", method=method, folder_path=folder_path)
 
-run_script("mo_extraction.py", method=method, folder_path=folder_path)
+run_script("unified_file_processor.py", folder_path=folder_path, method=method, extract_types="all")
 
-run_script("08states.py", method=method, folder_path=folder_path)
-
-run_script("09apbv2.py", folder_path=folder_path)
-run_script("10sqrtambv2.py", folder_path=folder_path, method=method)
-
-run_script("11hq1d.py", method=method, basis_set=basis_set, xc_functional=xc_functional)
-run_script("12hq2d.py", method=method, basis_set=basis_set, xc_functional=xc_functional)
+run_script("coupling_extraction.py", method=method, basis_set=basis_set, xc_functional=xc_functional)
 
 print(f"\nData extraction complete for {folder_path}")
 
