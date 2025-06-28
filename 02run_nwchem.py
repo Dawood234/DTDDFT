@@ -17,11 +17,24 @@ folder_path = args.folder_path
 folder_path = folder_path.strip().replace(" ", "")
 
 i=0
-# Run NWChem for each input file in the input folder
+# Get all input files and sort them numerically by index
+input_files = []
 for input_file in os.listdir(folder_path):
     if input_file.startswith(f"{args.method}_input_") and input_file.endswith(".nw"):
-        # Generate output file name by replacing ".nw" with ".out"
-        output_file = os.path.splitext(input_file)[0] + ".out"
+        input_files.append(input_file)
+
+# Sort files numerically by extracting the index from filename
+def extract_index(filename):
+    # Extract number from filename like "tddft_input_5.nw" -> 5
+    return int(filename.split('_')[-1].split('.')[0])
+
+input_files.sort(key=extract_index)
+
+# Run NWChem for each input file in numerical order
+for input_file in input_files:
+        # Generate clean output file name: "tddft_input_5.nw" → "tddft_5.out"
+        base_name = input_file.replace("_input_", "_").replace(".nw", ".out")
+        output_file = base_name
 
 
         # Run NWChem

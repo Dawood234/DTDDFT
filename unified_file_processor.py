@@ -43,10 +43,10 @@ def sort_output_files(folder_path, method):
             print(f"Warning: No files found with pattern {method}_*.out")
             return []
         
-        # Sort by numerical index
+        # Sort by numerical index (new naming: method_X.out)
         try:
             sorted_files = sorted(eligible_files, 
-                                 key=lambda x: int(re.search(f"{method}_input_(\\d+).out", x).group(1)))
+                                 key=lambda x: int(re.search(f"{method}_(\\d+).out", x).group(1)))
         except (AttributeError, ValueError) as e:
             print(f"Warning: Error sorting files by index, using alphabetical sort: {e}")
             sorted_files = sorted(eligible_files)

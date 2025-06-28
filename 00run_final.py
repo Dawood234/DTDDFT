@@ -18,8 +18,6 @@ def run_script(script_name, **kwargs):
         cmd.append(str(value))
     subprocess.run(cmd)
 
-
-
 if run_calc:
     # Generate input files
     run_script("01gen_inputFiles.py", method=method, xc_functional=xc_functional, 
@@ -51,8 +49,6 @@ if os.path.exists(folder_path):
 else:
     print(f"\nSkipping data extraction - folder {folder_path} not found")
     print(f"Assuming data was already extracted to data_{folder_path}.txt")
-
-
 
 print(f"\nComplete workflow finished for {folder_path}!")
 print(f"Vector data: data_{folder_path}.txt")

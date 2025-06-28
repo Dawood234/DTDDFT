@@ -1,0 +1,64 @@
+# NWChem input and output files
+*.nw
+*.out
+
+# FCIDump files (formatted coupled cluster integrals dump)
+*.fcidump
+
+# Computational chemistry output directories
+*_cc-pVDZ_*/
+*_cc-pVTZ_*/
+*_def2-SVP_*/
+*_def2-TZVP_*/
+*_def2-TZVPP_*/
+*_fcidump/
+
+# Method-specific directories
+tddft_*/
+tda_*/
+*tddft*/
+*tda*/
+
+# Large data files
+*.dat
+*.log
+*.tmp
+*.scratch
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Large matrix files (optional - comment out if you want to track these)
+apb_*
+sqrtamb_*
+
+# Data files (optional - comment out if you want to track these)
+# data_*.txt 

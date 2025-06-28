@@ -43,10 +43,7 @@ The workflow performs systematic BLA scans on molecular systems and analyzes the
 - `plots_analysis/analysis_refactored.py` - Refactored version with simplified class methods
 
 ### Data Extraction
-- `extraction_logic/` - Modular extraction components
-  - `mo_extractor.py` - Molecular orbital energy extraction
-  - `matrix_extractor.py` - APB and sqrt(A-B) matrix extraction
-  - `states_extractor.py` - Excited state data extraction
+- `unified_file_processor.py` - Unified data extraction from NWChem output files
 
 ## Usage
 

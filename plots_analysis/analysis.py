@@ -8,11 +8,11 @@ import re
 mpl.rcParams['figure.dpi']=100
 
 basis_list='def2-SVP,def2-TZVP,def2-TZVPP,cc-pVDZ,cc-pVTZ'.split(',')
-basis = basis_list[0]  # def2-SVP
+basis = basis_list[3]  # cc-pVDZ  
 func = 'pbe96'
-method = 'tddft'
+framework = 'tddft'  # Overall theoretical framework: 'tddft' or 'tda'
 
-print(f"Loading data for: {method}_{basis}_{func}")
+print(f"Loading data for: {framework}_{basis}_{func}")
 
 def load_vector_data(data_file):
     """Load all vector data from a standardized data file"""
@@ -38,7 +38,7 @@ def load_vector_data(data_file):
     return data_dict
 
 # Load data from standardized files
-folder_name = f"{method}_{basis}_{func}"
+folder_name = f"{framework}_{basis}_{func}"
 
 # Load vector data
 data_file = f"../data_{folder_name}.txt"
@@ -115,8 +115,8 @@ mo14_vec = get_vector_data(vector_data, ['mo14'])
 mo15_vec = get_vector_data(vector_data, ['mo15'])  
 mo16_vec = get_vector_data(vector_data, ['mo16'])
 mo17_vec = get_vector_data(vector_data, ['mo17'])
-ag_tddft_vec = get_vector_data(vector_data, [f'ag_{method}', 'ag'])
-bu_tddft_vec = get_vector_data(vector_data, [f'bu_{method}', 'bu'])
+ag_tddft_vec = get_vector_data(vector_data, [f'ag_{framework}', 'ag'])
+bu_tddft_vec = get_vector_data(vector_data, [f'bu_{framework}', 'bu'])
 Hq1d_vec = get_vector_data(vector_data, ['Hq1d'])
 Hq2d_vec = get_vector_data(vector_data, ['Hq2d'])
 
@@ -126,7 +126,7 @@ sqrtamb_vec = None  # Available in sqrtamb_file
 
 # Convert units
 au_to_ev = 27.2114
-print(f"Configuration: {basis}, {func}, {method}")
+print(f"Configuration: {basis}, {func}, {framework}")
 
 if ag_tddft_vec is not None:
     ag_tddft_vec = ag_tddft_vec / au_to_ev
@@ -179,8 +179,8 @@ class TDDFTCalculation:
         if cls._apb_data is None:
             cls._apb_data = load_matrix_data(apb_file_path)
         if cls._sqrtamb_data is None:
-            if method.lower() == 'tda':
-                cls._sqrtamb_data = cls._apb_data  # For TDA, sqrt(A-B) = A+B
+            if framework.lower() == 'tda':
+                cls._sqrtamb_data = cls._apb_data  # For TDA, sqrt(A-B) = A+B just as placeholder as it is not needed
             else:
                 cls._sqrtamb_data = load_matrix_data(sqrtamb_file_path)
 
@@ -334,13 +334,15 @@ def mazur_DTDA(om_tddft,apb,Hq1d, Hq2d, Hdq1, Hdq2,nu1,nu2,om_d):
 
 #run plot and compare with ref
 
-file_path='/Users/physics2/Documents/work/projects/DTDDFT/may20/bla_scan_scripts/delta_eomcc.csv'
-data = pd.read_csv(file_path)
+file_path='../ex_data.txt'
+data = pd.read_csv(file_path, sep=r'\s+', comment='#')
+if len(data.columns) >= 3:
+    data.columns = ['x', 'bu', 'ag']
 bla_ex= data['x'].to_numpy()
 bu_delta= data['bu'].to_numpy()
 ag_delta= data['ag'].to_numpy()
 
-def plot_dtddft(meth,ag,bu,gs):
+def plot_dtddft(algorithm,ag,bu,gs):
     f12,f22=[],[]
     e1,e2=[],[]
     nu1_vec,nu2_vec, nud_vec=[],[],[]
@@ -348,7 +350,7 @@ def plot_dtddft(meth,ag,bu,gs):
     for i in range(len(bla)):
         data=TDDFTCalculation(i)
         om_tddft,om_d,nu1,nu2,nud,sqrtamb,apb,Hdq1,Hq1d,Hdq2,Hq2d=data.get_results()
-        fs,es=meth(om_tddft,sqrtamb,apb,Hq1d, Hq2d, Hdq1, Hdq2, nu1, nu2, om_d)
+        fs,es=algorithm(om_tddft,sqrtamb,apb,Hq1d, Hq2d, Hdq1, Hdq2, nu1, nu2, om_d)
         f12.append(fs[0])
         f22.append(fs[1])
         e1.append(es[0])
@@ -379,11 +381,11 @@ def plot_dtddft(meth,ag,bu,gs):
     plt.legend(fontsize=13,loc=(0.03,0.01))
     plt.xlabel(r'BLA(${\AA}$)',fontsize=15)
     plt.ylabel('E (eV)',fontsize=15)
-    plt.title(f'd{method}: {basis}, {func}')
+    plt.title(f'{algorithm.__name__ if hasattr(algorithm, "__name__") else str(algorithm)}: {basis}, {func}')
     plt.show()
 
     return e11, e22, f12, f22, ag_shifted, bu_shifted,nu1_vec,nu2_vec,nud_vec
-if method=='tddft':
+if framework=='tddft':
     e11, e22, f12, f22, ag_shifted, bu_shifted,nu1_vec,nu2_vec,nud_vec=plot_dtddft(mazur_dtddft,ag_tddft_vec,bu_tddft_vec,gs)
     # plt.plot(bla,f12)
     # plt.gca().invert_xaxis()

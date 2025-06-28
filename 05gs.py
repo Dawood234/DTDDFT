@@ -25,8 +25,8 @@ energies = []
 
 # Loop through the sorted file names
 for filename in file_names:
-    # Check if the file name matches the pattern
-    if filename.startswith(f"{method}_input_") and filename.endswith(".out"):
+    # Check if the file name matches the pattern (new naming: tddft_X.out)
+    if filename.startswith(f"{method}_") and filename.endswith(".out") and not "input" in filename:
         # Open the file for reading
         with open(os.path.join(folder, filename), 'r') as file:
             lines = file.readlines()
