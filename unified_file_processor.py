@@ -1,13 +1,6 @@
 #!/usr/bin/env python3
 """
-Unified File Processor
-
-This script replaces 08states.py, matrix_extraction.py, and mo_extraction.py by:
-1. Reading through NWChem output files ONCE
-2. Applying all extraction logic (states + matrices + MO energies) to each file
-3. Saving results to appropriate output files
-
-This is much more efficient than reading the same large files multiple times.
+This script extracts all data from NWChem output files and saves it to a standardized data file.
 
 Usage:
     python unified_file_processor.py --folder_path tddft_cc-pVDZ_pbe0 --method tddft

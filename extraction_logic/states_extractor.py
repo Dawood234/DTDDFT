@@ -6,7 +6,8 @@ Separated from file navigation logic for better modularity and efficiency.
 """
 
 import re
-
+import numpy as np
+import os
 def extract_excited_states(file_content, method):
     """
     Extract excited state energies (ag and bu) from NWChem output file content.
@@ -60,8 +61,7 @@ def save_states_to_data_file(all_ag_energies, all_bu_energies, method, data_file
         method (str): Method name
         data_file (str): Path to the data file
     """
-    import numpy as np
-    import os
+
     
     # Read existing data or create new structure
     data_dict = {}
