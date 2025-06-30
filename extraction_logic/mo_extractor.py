@@ -2,14 +2,12 @@
 MO Extraction Logic
 
 Contains functions to extract molecular orbital energies from NWChem output file content.
-Separated from file navigation logic for better modularity and efficiency.
 """
 
 import re
 import numpy as np
 
 def extract_energy_from_line(line):
-    """Extract energy from a line containing scientific notation in D format"""
     # Handle both formats: regex match and D-notation
     patterns = [
         r"E=\s*([\d.-]+)D([\d+-]+)",  # Format: E= -2.9171D-01
@@ -24,16 +22,7 @@ def extract_energy_from_line(line):
     return None
 
 def extract_mo_energies_from_content(file_content, mo_numbers):
-    """
-    Extract MO energies from NWChem output file content.
-    
-    Args:
-        file_content (str): Content of the NWChem output file
-        mo_numbers (list): List of MO numbers to extract
-        
-    Returns:
-        dict: Dictionary with MO numbers as keys and energy values as values
-    """
+
     energies = {}
     lines = file_content.split('\n')
     
@@ -60,14 +49,7 @@ def extract_mo_energies_from_content(file_content, mo_numbers):
     return energies
 
 def save_mo_energies_to_data_file(all_mo_energies, mo_numbers, data_file):
-    """
-    Save MO energies to the standardized data file.
-    
-    Args:
-        all_mo_energies (dict): Dictionary with MO numbers as keys and lists of energies as values
-        mo_numbers (list): List of MO numbers that were extracted
-        data_file (str): Path to the data file
-    """
+
     import os
     
     # Read existing data or create new structure

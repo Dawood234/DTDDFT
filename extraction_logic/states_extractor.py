@@ -2,23 +2,12 @@
 States Extraction Logic
 
 Contains functions to extract excited state energies from NWChem output file content.
-Separated from file navigation logic for better modularity and efficiency.
 """
 
 import re
 import numpy as np
 import os
 def extract_excited_states(file_content, method):
-    """
-    Extract excited state energies (ag and bu) from NWChem output file content.
-    
-    Args:
-        file_content (str): Content of the NWChem output file
-        method (str): Method name for identification
-        
-    Returns:
-        dict: Dictionary with 'ag' and 'bu' energy lists
-    """
     energies_ag = []
     energies_bu = []
     
@@ -52,16 +41,6 @@ def extract_excited_states(file_content, method):
     }
 
 def save_states_to_data_file(all_ag_energies, all_bu_energies, method, data_file):
-    """
-    Save excited state energies to the standardized data file.
-    
-    Args:
-        all_ag_energies (list): List of ag energies from all files
-        all_bu_energies (list): List of bu energies from all files  
-        method (str): Method name
-        data_file (str): Path to the data file
-    """
-
     
     # Read existing data or create new structure
     data_dict = {}

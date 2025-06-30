@@ -1,12 +1,3 @@
-"""
-Analysis v2 - Simple improvements to original analysis.py
-- Clean variable naming 
-- Better documentation
-- Fixed plot title issue
-- Added missing dressed TDDFT functionality
-- Simplified argument passing by moving methods into TDDFTCalculation class
-"""
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
