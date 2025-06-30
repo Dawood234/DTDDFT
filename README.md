@@ -1,10 +1,7 @@
-# DTDDFT Bond Length Alternation (BLA) Scan Analysis
+# DTDDFT 
 
-This repository contains scripts for running dressed time-dependent density functional theory (DTDDFT) calculations with bond length alternation scanning using NWChem.
-
-## Overview
-
-The workflow performs systematic BLA scans on molecular systems and analyzes the results using various DTDDFT/DTDA algorithms. It includes automated data extraction, matrix processing, and comparative analysis with reference data.
+This repository contains a rudimentary workflow for running dressed time-dependent density functional theory (DTDDFT) calculations with bond length alternation scanning using NWChem.
+This workflow performs systematic BLA scans on molecular systems and analyzes the results using various DTDDFT/DTDA algorithms. 
 
 ## Prerequisites
 
@@ -12,173 +9,121 @@ The workflow performs systematic BLA scans on molecular systems and analyzes the
 - NumPy
 - Pandas
 - Matplotlib
-- NWChem (for quantum chemistry calculations)
+- NWChem
 
-## Installation
-
-1. Clone this repository:
-   ```bash
-   git clone <repository-url>
-   cd v1.3_clean_backup_imp
-   ```
-
-2. Install Python dependencies:
-   ```bash
-   pip install numpy pandas matplotlib
-   ```
-
-3. Ensure NWChem is installed and accessible in your PATH.
 
 ## File Structure
 
-### Core Scripts
+### Core Workflow Scripts
+- `00run_final.py` - Master orchestration script
 - `01gen_inputFiles.py` - Generates NWChem input files for BLA scan
-- `02run_nwchem.py` - Executes NWChem calculations
+- `02run_nwchem.py` - Executes NWChem calculations with proper ordering
 - `03clean.py` - Cleans up temporary files
-- `04move_files.py` - Organizes output files
+- `04move_files.py` - Organizes output files into method-specific directories
 - `05gs.py` - Extracts ground state energies
 
-### Analysis Scripts
-- `plots_analysis/analysis.py` - Original analysis with traditional function signatures
-- `plots_analysis/analysis_refactored.py` - Refactored version with simplified class methods
-
 ### Data Extraction
-- `unified_file_processor.py` - Unified data extraction from NWChem output files
+- `unified_file_processor.py` - **Main extraction script** - processes all data types in single pass
+- `coupling_extraction.py` - Extracts Hq1d and Hq2d coupling elements
+- `extraction_logic/` - Modular extraction functions:
+  - `states_extractor.py` - Excited state energy extraction
+  - `matrix_extractor.py` - A+B and sqrt(A-B) matrix extraction  
+  - `mo_extractor.py` - Molecular orbital energy extraction
 
-## Usage
+### Analysis Scripts
+- `plots_analysis/analysisv2.py` - **Primary analysis script** with simplified class-based architecture
+- `plots_analysis/analysis.py` - Original analysis (maintained for reference)
 
-### Step 1: Prepare Geometry
-1. Place your molecular geometry in `geom.txt`
-2. Ensure the geometry includes BLA coordinate definitions
+### Data Files
+- `geom.txt` - Input molecular geometry
+- `ex_data.txt` - Reference experimental data for comparison
+- `data_*.txt` - Extracted vector data (energies, MO values, coupling elements)
 
-### Step 2: Generate Input Files
+## Quick Start
+
+### Complete Workflow
 ```bash
-python3 01gen_inputFiles.py
+# Run the entire workflow
+python3 00run_final.py
 ```
-This creates NWChem input files for each BLA point in the scan.
 
-### Step 3: Run Calculations
+### Manual Step-by-Step
+
+#### Step 1: Prepare Geometry
+Place your molecular geometry in `geom.txt` in standard XYZ format.
+
+#### Step 2: Generate and Run Calculations
 ```bash
-python3 02run_nwchem.py
+python3 01gen_inputFiles.py  # Generate NWChem inputs
+python3 02run_nwchem.py      # Run calculations (may take hours/days :) if you are running it with multiple cores you need to modify the script )
 ```
-Executes all NWChem calculations. This may take considerable time depending on system size and number of BLA points.
 
-### Step 4: Extract Data
-The unified file processor automatically extracts all required data:
+#### Step 3: Extract All Data (Unified Approach)
 ```bash
+# Extract states, matrices, and MO energies in single pass
 python3 unified_file_processor.py
+
+# Extract coupling elements  
+python3 coupling_extraction.py
 ```
-This creates:
-- `data_tddft_cc-pVDZ_pbe96.txt` - Vector data (energies, MO values, coupling elements)
+
+This creates standardized data files:
+- `data_tddft_cc-pVDZ_pbe96.txt` - All vector data (energies, MO values, coupling elements)
 - `apb_tddft_cc-pVDZ_pbe96` - A+B matrices
 - `sqrtamb_tddft_cc-pVDZ_pbe96` - sqrt(A-B) matrices
 
-### Step 5: Run Analysis
-
-#### Option A: Original Analysis
+#### Step 4: Run Analysis
 ```bash
 cd plots_analysis
-python3 analysis.py
+python3 analysisv2.py  # Recommended - optimized version
 ```
-
-#### Option B: Refactored Analysis (Recommended)
-```bash
-cd plots_analysis
-python3 analysis_refactored.py
-```
-
-The refactored version offers cleaner function signatures and easier method switching.
 
 ## Configuration
 
-### Basis Sets and Functionals
-Edit the configuration variables in analysis scripts:
+### Method and Basis Set Configuration
+Edit the configuration in analysis scripts:
 ```python
 basis_list = 'def2-SVP,def2-TZVP,def2-TZVPP,cc-pVDZ,cc-pVTZ'.split(',')
-basis = basis_list[3]  # cc-pVDZ
+basis = basis_list[3]  # cc-pVDZ  
 func = 'pbe96'
-framework = 'tddft'  # or 'tda'
+framework = 'tddft'  # Overall theoretical framework: 'tddft' or 'tda'
 ```
 
-### BLA Array
-The BLA points are defined in the analysis scripts. Modify as needed:
+### BLA Scan Points
+The BLA points are defined in analysis scripts:
 ```python
-bla = np.array([0.125466, 0.110464, ..., -0.144])
+bla = np.array([0.125466, 0.110464, 0.0954646, ..., -0.144])
 ```
 
-### Reference Data
-Place experimental or reference data in `ex_data.txt` with format:
+### Reference Data Format
+Place reference data in `ex_data.txt`:
 ```
-BLA_value  Bu_energy  Ag_energy
-0.125466   5.85       6.75
+# BLA_value  Bu_energy  Ag_energy
+0.125466    5.85       6.75
+0.110464    5.82       6.72
 ...
 ```
 
-## Analysis Methods
+## Analysis
 
-The refactored version supports multiple algorithms:
+The `analysisv2.py` script supports multiple dressed TDDFT algorithms through a clean class-based interface:
 
 ### DTDDFT Methods
-- `'DTTDFT'` - Standard DTDDFT
-- `'mazur_dtddft'` - Self-consistent DTDDFT (Mazur method)
+- `mazur_dtddft()` - Self-consistent DTDDFT (Mazur method) 
+- `DTTDFT()` - Standard DTDDFT 
 
-### DTDA Methods  
-- `'DTDA'` - Standard DTDA
-- `'mazur_DTDA'` - Self-consistent DTDA (Mazur method)
+### DTDA Methods (Available in original analysis.py)
+- `mazur_DTDA()` - Self-consistent DTDA (Mazur method)
+- `DTDA()` - Standard DTDA
 
-### Switching Methods
+### Usage Example
 ```python
-# Change algorithm by modifying the function call:
-plot_dtddft('mazur_dtddft', ag_tddft_vec, bu_tddft_vec, gs)
-# or
-plot_dtddft('DTDA', ag_tddft_vec, bu_tddft_vec, gs)
+calc = TDDFTCalculation(bla_index)
+fs, es = calc.mazur_dtddft()  # Returns oscillator strengths and energies
 ```
 
-## Output
 
-### Generated Files
-- Vector data files (`data_*.txt`)
-- Matrix files (`apb_*`, `sqrtamb_*`)
-- CSV results (`dtddft_results_*.csv`)
 
-### Plots
-- Comparison plots showing DTDDFT vs reference data
-- BLA vs energy curves for different states
-- TDDFT comparison data
 
-## Troubleshooting
 
-### Common Issues
 
-1. **Missing data files**: Ensure all extraction steps completed successfully
-2. **Matrix loading errors**: Check file paths and permissions
-3. **Convergence issues**: Adjust tolerance in Mazur methods
-4. **Memory issues**: Large matrix files may require sufficient RAM
-
-### Performance Tips
-
-1. Use the refactored analysis for better performance
-2. Class methods avoid redundant parameter passing
-3. Matrix data is cached automatically
-4. Progress can be monitored through debug output
-
-## File Naming Convention
-
-Files follow the pattern: `{type}_{framework}_{basis}_{functional}`
-
-Examples:
-- `data_tddft_cc-pVDZ_pbe96.txt`
-- `apb_tddft_cc-pVDZ_pbe96`
-- `sqrtamb_tddft_cc-pVDZ_pbe96`
-
-## Contributing
-
-When modifying the code:
-1. Keep the original and refactored versions in sync for core functionality
-2. Update both analysis scripts when changing algorithms
-3. Maintain backward compatibility with existing data files
-4. Test with known reference systems
-
-## License
-
-This code is provided for academic and research purposes. 
