@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""
-This script extracts all data from NWChem output files and saves it to a standardized data file.
-
-Usage:
-    python unified_file_processor.py --folder_path tddft_cc-pVDZ_pbe0 --method tddft
-    python unified_file_processor.py --folder_path tddft_cc-pVDZ_pbe0 --method tddft --extract_types states
-    python unified_file_processor.py --folder_path tddft_cc-pVDZ_pbe0 --method tddft --extract_types matrices
-    python unified_file_processor.py --folder_path tddft_cc-pVDZ_pbe0 --method tddft --extract_types mos --mo_numbers "14,15,16"
-    python unified_file_processor.py --folder_path tddft_cc-pVDZ_pbe0 --method tddft --extract_types all
-"""
-
 import os
 import re
 import argparse
@@ -24,16 +13,7 @@ from extraction_logic.matrix_extractor import (
 from extraction_logic.mo_extractor import extract_mo_energies_from_content, save_mo_energies_to_data_file
 
 def sort_output_files(folder_path, method):
-    """
-    Get and sort NWChem output files by their numerical index.
-    
-    Args:
-        folder_path (str): Path to folder containing output files
-        method (str): Method name for filtering files
-        
-    Returns:
-        list: Sorted list of output file paths
-    """
+
     try:
         # Get all .out files that match the method pattern
         eligible_files = [filename for filename in os.listdir(folder_path) 
@@ -61,20 +41,7 @@ def sort_output_files(folder_path, method):
         return []
 
 def process_single_file(file_path, method, extract_states=True, extract_matrices=True, extract_mos=True, mo_numbers=None):
-    """
-    Process a single NWChem output file and extract all requested data.
-    
-    Args:
-        file_path (str): Path to the output file
-        method (str): Method name
-        extract_states (bool): Whether to extract excited states
-        extract_matrices (bool): Whether to extract matrices
-        extract_mos (bool): Whether to extract MO energies
-        mo_numbers (list): List of MO numbers to extract
-        
-    Returns:
-        dict: Dictionary with extracted data
-    """
+
     filename = os.path.basename(file_path)
     
     try:

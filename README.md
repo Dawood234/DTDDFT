@@ -44,9 +44,9 @@ This workflow performs systematic BLA scans on molecular systems and analyzes th
 ### Complete Workflow
 ```bash
 # Run the entire workflow
-python3 00run_final.py
+python 00run_final.py
 ```
-
+after running it, run one of the analysis files in `plots_analysis` folder to generate the plot.
 ### Manual Step-by-Step
 
 #### Step 1: Prepare Geometry
@@ -67,7 +67,7 @@ python3 unified_file_processor.py
 python3 coupling_extraction.py
 ```
 
-This creates standardized data files:
+This creates standardized data files (the names are according to the method (tddft vs tda ) basis set and functional ):
 - `data_tddft_cc-pVDZ_pbe96.txt` - All vector data (energies, MO values, coupling elements)
 - `apb_tddft_cc-pVDZ_pbe96` - A+B matrices
 - `sqrtamb_tddft_cc-pVDZ_pbe96` - sqrt(A-B) matrices
