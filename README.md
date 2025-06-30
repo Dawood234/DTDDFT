@@ -109,15 +109,10 @@ Place reference data in `ex_data.txt`:
 The `analysisv2.py` script supports multiple dressed TDDFT algorithms through a clean class-based interface:
 
 ### DTDDFT Methods
-- `mazur_dtddft()` - Self-consistent DTDDFT (Mazur method) 
+- `mazur_dtddft()` - Self-consistent DTDDFT [The diagonalization method followed by Mazur and Włodarczyk](https://onlinelibrary.wiley.com/doi/10.1002/jcc.21102)
 - `DTTDFT()` - Standard DTDDFT 
 
 ### DTDA Methods (Available in original analysis.py)
-- `mazur_DTDA()` - Self-consistent DTDA (Mazur method)
+- `mazur_DTDA()` - Self-consistent DTDA [The diagonalization method followed by Mazur and Włodarczyk](https://onlinelibrary.wiley.com/doi/10.1002/jcc.21102)
 - `DTDA()` - Standard DTDA
 
-### Usage Example
-```python
-calc = TDDFTCalculation(bla_index)
-fs, es = calc.mazur_dtddft()  # Returns oscillator strengths and energies
-```
