@@ -61,4 +61,4 @@ apb_*
 sqrtamb_*
 
 # Data files (optional - comment out if you want to track these)
-# data_*.txt 
+# data_*.txt .DS_Store
