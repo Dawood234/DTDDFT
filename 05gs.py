@@ -17,17 +17,13 @@ def get_index(filename):
     except ValueError:
         return float('inf')  # Return a very large number for invalid filenames
 
-# Get the list of file names sorted by their index
 file_names = sorted(os.listdir(folder), key=get_index)
 
-# Initialize a list to store the extracted energies
 energies = []
 
 # Loop through the sorted file names
 for filename in file_names:
-    # Check if the file name matches the pattern (new naming: tddft_X.out)
     if filename.startswith(f"{method}_") and filename.endswith(".out") and not "input" in filename:
-        # Open the file for reading
         with open(os.path.join(folder, filename), 'r') as file:
             lines = file.readlines()
             # Search for the last instance of "Total DFT energy"
@@ -68,5 +64,5 @@ with open(data_file, 'w') as f:
         f.write(f"{var_name}=np.array({array_data.tolist()})\n")
 
 print(f"Ground state energies saved to {data_file}")
-print(f"gs_{folder}=np.array({energies})")  # Keep stdout for compatibility
+print(f"gs_{folder}=np.array({energies})") 
 

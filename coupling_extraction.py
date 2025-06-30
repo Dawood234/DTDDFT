@@ -14,7 +14,7 @@ parser.add_argument('--coupling_types', type=str, default='Hq1d,Hq2d',
 # Parse the arguments
 args = parser.parse_args()
 
-# Define coupling patterns
+# Define coupling patterns (this depends on the KS transitions that contribte to the true excitation and needs to be worked out by hand (see DTDDFT notes))
 COUPLING_PATTERNS = {
     'Hq1d': "16\\s+15\\s+15\\s+14",
     'Hq2d': "17\\s+16\\s+16\\s+15"

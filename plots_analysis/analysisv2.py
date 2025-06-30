@@ -1,6 +1,6 @@
 """
 Analysis v2 - Simple improvements to original analysis.py
-- Clean variable naming (framework instead of method)
+- Clean variable naming 
 - Better documentation
 - Fixed plot title issue
 - Added missing dressed TDDFT functionality

@@ -121,9 +121,3 @@ The `analysisv2.py` script supports multiple dressed TDDFT algorithms through a 
 calc = TDDFTCalculation(bla_index)
 fs, es = calc.mazur_dtddft()  # Returns oscillator strengths and energies
 ```
-
-
-
-
-
-
