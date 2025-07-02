@@ -4,8 +4,7 @@ import argparse
 # from geom_pslpfc21 import geometries # PSLPFC geometry (in agnstrom)
 
 parser = argparse.ArgumentParser(description="Generate input files for TDDFT or TDA calculations.")
-parser.add_argument('--geometry_file', type=str, required=True, help='Path to the folder where files will be saved')
-parser.add_argument('--num_atoms', type=int, required=True, help='number of atoms per geometry')
+parser.add_argument('--geometry_file', type=str, required=True, help='Path to the geometry file')
 parser.add_argument('--folder_path', type=str, required=True, help='Path to the folder where files will be saved')
 parser.add_argument('--method', type=str, required=True, choices=['tda', 'tddft'], help='Calculation method: tda or tddft')
 parser.add_argument('--xc_functional', type=str, required=True, help='Exchange-correlation functional (e.g., b3lyp)')
@@ -13,7 +12,6 @@ parser.add_argument('--basis_set', type=str, required=True, help='Basis set (e.g
 parser.add_argument('--unit', type=str, required=True)
 
 args = parser.parse_args()
-atoms_per_geometry=args.num_atoms
 folder_path = args.folder_path
 folder_path = folder_path.strip().replace(" ", "")
 # Templates for TDA and TDDFT calculations
@@ -86,28 +84,17 @@ template = template_tda if args.method == "tda" else template_tddft
 os.makedirs(folder_path, exist_ok=True)
 
 
-# def read_and_split_geometries(filename):
-#     with open(filename, 'r') as file:
-#         content = file.read()
-    
-#     # Split the content by empty lines
-#     geometries = content.strip().split('\n\n')
-    
-#     return geometries
-
-def read_and_split_geometries(filename, atoms_per_geometry):
+def read_and_split_geometries(filename):
     with open(filename, 'r') as file:
-        lines = [line.strip() for line in file.readlines() if line.strip() != ""]
-
-    geometries = []
-    for i in range(0, len(lines), atoms_per_geometry):
-        geometry = "\n".join(lines[i:i + atoms_per_geometry])
-        geometries.append(geometry)
-
+        content = file.read()
+    
+    # Split the content by empty lines
+    geometries = content.strip().split('\n\n')
+    
     return geometries
 
 filename = args.geometry_file
-geometries = read_and_split_geometries(filename,atoms_per_geometry)
+geometries = read_and_split_geometries(filename)
 
 for i, geometry in enumerate(geometries):
     indented_geometry = "\n".join(["    " + line for line in geometry.strip().split("\n")])

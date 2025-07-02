@@ -3,12 +3,11 @@ import os
 
 method = "tddft"
 xc_functional = "pbe96"
-basis_set = "cc-pVDZ"
+basis_set = "def2-SVP"
 folder_path = f"{method}_{basis_set}_{xc_functional}"
 geometry_file='geom.txt'
-num_atoms=10
 unit = 'angstrom'
-run_calc = False
+run_calc = True
 print(folder_path)
 
 def run_script(script_name, **kwargs):
@@ -22,7 +21,7 @@ if run_calc:
     # Generate input files
     run_script("01gen_inputFiles.py", method=method, xc_functional=xc_functional, 
                basis_set=basis_set, folder_path=folder_path, geometry_file=geometry_file, 
-               num_atoms=num_atoms, unit=unit)
+               unit=unit)
 
     # Run NWChem calculations
     run_script("02run_nwchem.py", folder_path=folder_path, method=method)
